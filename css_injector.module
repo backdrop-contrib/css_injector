@@ -156,8 +156,8 @@ function css_injector_admin() {
     $form['css_injector_use_ace'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use Ace syntax highlighter'),
-      '#default_value' => config_get('css_injector.settings', 'css_injector_use_ace') ?: 1,
-      '#description' => t("Check if you want to enhance your editing experience with Ace syntax highlighter. If checked, Ace will be loaded via CDN."),
+      '#default_value' => config_get('css_injector.settings', 'css_injector_use_ace'),
+      '#description' => t('Check if you want to enhance your editing experience with Ace syntax highlighter. If checked, Ace will be loaded via CDN.'),
     );
   } else {
     $form['css_injector_use_ace_error'] = array(
