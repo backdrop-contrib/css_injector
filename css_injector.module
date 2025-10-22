@@ -87,14 +87,6 @@ function css_injector_css_alter(&$css) {
  */
 function css_injector_menu() {
   $items = array(
-    'admin/config/development/css-injector/settings' => array(
-      'title' => 'CSS injector module settings',
-      'description' => 'Settings page for CSS injector module.',
-      'page callback' => 'backdrop_get_form',
-      'page arguments' => array('css_injector_admin'),
-      'access arguments' => array('administer css injection settings'),
-      'type' => MENU_LOCAL_ACTION,
-    ),
     'admin/config/development/css-injector' => array(
       'title' => 'CSS injector',
       'description' => 'Add CSS to the page output based on configurable rules.',
@@ -104,16 +96,28 @@ function css_injector_menu() {
       'file' => 'css_injector.admin.inc',
       'type' => MENU_NORMAL_ITEM,
     ),
-    'admin/config/development/css-injector/edit' => array(
-      'title' => 'Edit CSS injector rule',
+    'admin/config/development/css-injector/rules' => array(
+      'title' => 'Rules',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    ),
+    'admin/config/development/css-injector/settings' => array(
+      'title' => 'Settings',
+      'description' => 'Settings page for CSS injector module.',
+      'page callback' => 'backdrop_get_form',
+      'page arguments' => array('css_injector_admin'),
+      'access arguments' => array('administer css injection settings'),
+      'type' => MENU_LOCAL_TASK,
+    ),
+    'admin/config/development/css-injector/add' => array(
+      'title' => 'Add CSS injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
       'file' => 'css_injector.admin.inc',
-      'type' => MENU_CALLBACK,
+      'type' => MENU_LOCAL_ACTION,
     ),
-    'admin/config/development/css-injector/add' => array(
-      'title' => 'Add CSS injector rule',
+    'admin/config/development/css-injector/edit' => array(
+      'title' => 'Edit CSS injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
