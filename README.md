@@ -35,6 +35,7 @@ Current Maintainers
 
 - [Vincent Stemen](https://github.com/vstemen)
 - [klonos](https://github.com/klonos)
+- [Martin Price](https://github.com/yorkshire-pudding)
 
 Credits
 -------
