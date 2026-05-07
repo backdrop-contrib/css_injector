@@ -4,3 +4,7 @@ type = module
 backdrop = 1.x
 configure = admin/config/development/css-injector
 
+maintainers[vstemen] = Vincent Stemen
+maintainers[klonos] = klonos
+maintainers[yorkshire-pudding] = Martin Price
+maintainers_wanted = TRUE
