@@ -39,7 +39,7 @@ function css_injector_rule_config_move() {
  */
 function css_injector_rule_css_config_add() {
   // Get the rule definition config.
-  $rules_definition_config = config('css_injector.rules_definition');
+  $rules_definition_config = config_get('css_injector.rules_definition');
 
   // Retrieve the CSS text from the files of all defined rules.
   $rules_css = array();
