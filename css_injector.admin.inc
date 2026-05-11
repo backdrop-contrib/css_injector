@@ -257,19 +257,24 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#default_value' => isset($rule['enabled']) ? $rule['enabled'] : 1,
   );
 
-  $form['buttons']['save'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['save'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
     '#submit' => array('css_injector_edit_save'),
   );
-  $form['buttons']['save_and_continue'] = array(
+  $form['actions']['save_and_continue'] = array(
     '#type' => 'submit',
     '#value' => t('Save and Continue Editing'),
     '#submit' => array('css_injector_edit_save_and_continue'),
   );
-
+  $form['actions']['cancel'] = array(
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+    '#submit' => array('css_injector_edit_cancel'),
+  );
   if (!empty($rule['crid'])) {
-    $form['buttons']['delete'] = array(
+    $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#crid' => $rule['crid'],
@@ -318,6 +323,12 @@ function css_injector_edit_save_and_continue($form, &$form_state) {
   $form_state['redirect'] = 'admin/config/development/css-injector/edit/' . $form_state['values']['rule']['crid'];
 }
 
+/**
+ * Cancel callback for the CSS rule edit form.
+ */
+function css_injector_edit_cancel($form, &$form_state) {
+  $form_state['redirect'] = 'admin/config/development/css-injector';
+}
 
 /**
  * Menu callback -- ask for confirmation of rule deletion.
