@@ -20,6 +20,7 @@ function css_injector_rule_config_move() {
   $rules = array();
   $results = db_query("SELECT * FROM {css_injector_rule}", array(), array('fetch' => PDO::FETCH_ASSOC))->fetchAllAssoc('crid');
   foreach ($results as $id => $rule) {
+    $rule['rule_themes'] = unserialize($rule['rule_themes']);
     $rules[$id] = $rule;
   }
 
