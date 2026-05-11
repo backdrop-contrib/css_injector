@@ -34,7 +34,7 @@ function css_injector_init() {
     if (!isset($css_rule['enabled']) || $css_rule['enabled']) {
       if (_css_injector_evaluate_rule($css_rule)) {
         $file_uri = _css_injector_rule_uri($css_rule['crid']);
-        $theme_rules = isset($css_rule['rule_themes']) ? unserialize($css_rule['rule_themes']) : '';
+        $theme_rules = isset($css_rule['rule_themes']) ? $css_rule['rule_themes'] : array();
         global $theme;
         if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, true)) {
           switch ($css_rule['media']) {
@@ -200,21 +200,10 @@ function css_injector_permission() {
  * Helper function to load all CSS injection rules.
  */
 function _css_injector_load_rule($crid = NULL, $reset = FALSE) {
-  static $rules;
-  // TODO: Change to backdrop_static_fast pattern.
-  if (!isset($rules) || $reset) {
-    if (!$reset && ($cache = cache_get('css_injector:rules')) && is_array($cache->data)) {
-      $rules = $cache->data;
-    }
-    else {
-      $rules = array();
-      $results = db_query("SELECT * FROM {css_injector_rule}", array(), array('fetch' => PDO::FETCH_ASSOC))->fetchAllAssoc('crid');
-      foreach ($results as $id => $rule) {
-        $rules[$id] = $rule;
-      }
-      cache_set('css_injector:rules', $rules);
-    }
-  }
+  // Get the configured rule definitions. As the config is defined as
+  // _config_static it is loaded once per request and therefore neither static
+  // variable nor caching are needed.
+  $rules = config_get('css_injector.rules_definition', 'rules') ?? array();
 
   if (is_numeric($crid)) {
     return $rules[$crid];
@@ -230,9 +219,8 @@ function _css_injector_load_rule($crid = NULL, $reset = FALSE) {
 function _css_injector_delete_rule($crid) {
   if ($rule = _css_injector_load_rule($crid)) {
     file_unmanaged_delete(_css_injector_rule_uri($crid));
-    db_delete('css_injector_rule')
-      ->condition('crid', $crid)
-      ->execute();
+    config_clear('css_injector.rules_definition', 'rules.' . $crid);
+    config_clear('css_injector.rules_css', 'rules.' . $crid);
     backdrop_set_message(t('The CSS rule %title has been deleted.', array('%title' => $rule['title'])));
   }
 }
@@ -243,7 +231,6 @@ function _css_injector_delete_rule($crid) {
  * @param $css_rule
  *   Array describing the rule.
  */
-
 function _css_injector_evaluate_rule($css_rule = array()) {
   // Match path if necessary.
   if (!empty($css_rule['rule_conditions'])) {
@@ -318,14 +305,56 @@ function _css_injector_update_breadcrumb() {
   backdrop_set_breadcrumb($breadcrumb);
 }
 
-/*
- *  Implements hook_config_info()
+/**
+ * Implements hook_config_info().
  */
 function css_injector_config_info() {
-  $prefixes['css_injector.settings'] = array(
-    'label' => t('CSS injector settings'),
-    'group' => t('Configuration'),
+  $config_info = array(
+    'css_injector.settings' => array(
+      'label' => t('CSS Injector settings'),
+      'group' => t('Configuration'),
+    ),
+    'css_injector.rules_definition' => array(
+      'label' => t('CSS Injector Rule Definitions'),
+      'group' => t('Configuration'),
+    ),
+    'css_injector.rules_css' => array(
+      'label' => t('CSS Injector Rule CSS'),
+      'group' => t('Configuration'),
+    ),
   );
-  return $prefixes;
+  return $config_info;
 }
 
+/**
+ * Implements hook_config_update().
+ */
+function css_injector_config_update(Config $staging_config, Config $active_config) {
+  // Check to see if the config is the css_text config.
+  $config_name = $staging_config->getName();
+  if ($config_name === 'css_injector.rules_css') {
+    $staging_rules_css = $staging_config->get('rules');
+    $active_rules_css = $active_config->get('rules');
+    foreach ($staging_rules_css as $rule_id => $rule) {
+      // First check if the rule css exists in active.
+      $check_rule_exists = isset($active_rules_css[$rule_id]['css_text']);
+
+      // Check whether the CSS matches.
+      $check_css_match = ($active_rules_css[$rule_id]['css_text'] ?? '') == $rule['css_text'];
+
+      if (!$check_rule_exists || !$check_css_match) {
+        // If the CSS does not exist or does not match (re-)write the CSS file
+        // with the CSS from staging.
+        file_unmanaged_save_data($rule['css_text'], _css_injector_rule_uri($rule_id), FILE_EXISTS_REPLACE);
+      }
+    }
+    // Check to see if any of the rules in active are deleted by the staging
+    // config.
+    foreach ($active_rules_css as $rule_id => $rule) {
+      if (!isset($staging_rules_css[$rule_id])) {
+        // If the CSS is not in the staging rules CSS, remove the CSS file.
+        file_unmanaged_delete(_css_injector_rule_uri($rule_id));
+      }
+    }
+  }
+}

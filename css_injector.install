@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Install, update and uninstall functions for the css_injector module.
@@ -7,69 +6,78 @@
  */
 
 /**
- * Implements hook_install().
- */
-function css_injector_install() {
-}
-
-/**
- * Implements hook_schema().
- */
-function css_injector_schema() {
-  $schema['css_injector_rule'] = array(
-    'fields' => array(
-      'crid' => array(
-        'description' => 'The primary identifier for the CSS injection rule',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE),
-      'title' => array(
-        'description' => 'The descriptive title of the CSS injection rule',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE),
-      'rule_type' => array(
-        'description' => 'The type of rule to use when determining if the CSS should be injected',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0),
-      'rule_conditions' => array(
-        'description' => 'The data to evaluate when determining if the CSS should be injected',
-        'type' => 'text',
-        'not null' => TRUE),
-      'rule_themes' => array(
-        'description' => 'Themes that CSS rule will be applied to',
-        'type' => 'text',
-        'not null' => TRUE),
-      'media' => array(
-        'description' => 'The media type of the CSS file (screen, print, etc.)',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE),
-      'preprocess' => array(
-        'description' => 'Whether the CSS file should be included by the CSS preprocessor',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0),
-      'enabled' => array(
-        'description' => 'Whether the rules should be enabled',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 1),
-    ),
-    'primary key' => array('crid'),
-  );
-  return $schema;
-}
-
-/**
  * Implements hook_update_last_removed().
  */
 function css_injector_update_last_removed() {
   return 7002;
+}
+
+/**
+ * Common update function to migrate rule definition to configuration.
+ */
+function css_injector_rule_config_move() {
+  // Get the current rule definitions from the database.
+  $rules = array();
+  $results = db_query("SELECT * FROM {css_injector_rule}", array(), array('fetch' => PDO::FETCH_ASSOC))->fetchAllAssoc('crid');
+  foreach ($results as $id => $rule) {
+    $rules[$id] = $rule;
+  }
+
+  // Create the config file and populate with the rules.
+  $config = config('css_injector.rules_definition');
+  $config->setStatic();
+  $config->set('rules', $rules);
+  $config->save();
+
+  // Delete the rules definition database table.
+  db_drop_table('css_injector_rule');
+}
+
+/**
+ * Common update function to add the CSS text to config to facilitate config
+ * deployment between instances of the same site.
+ */
+function css_injector_rule_css_config_add() {
+  // Get the rule definition config.
+  $rules_definition_config = config('css_injector.rules_definition');
+
+  // Retrieve the CSS text from the files of all defined rules.
+  $rules_css = array();
+  module_load_include('module', 'css_injector');
+
+  if (!empty($rules_definition_config['rules'])) {
+    foreach ($rules_definition_config['rules'] as $crid => $rule) {
+      $path = _css_injector_rule_uri($rule['crid']);
+      $rules_css[$crid]['css_text'] = file_get_contents($path);
+    }
+  }
+
+  // Define and create the rules_css config.
+  $config = config('css_injector.rules_css');
+  $config->setStatic();
+  $config->set('rules', $rules_css);
+  $config->save();
+}
+
+/**
+ * Migrate css_injector rule definitions to config and set existing config
+ * to static.
+ */
+function css_injector_update_1001() {
+  // Set existing config as static.
+  $config = config('css_injector.settings');
+  $config->setStatic();
+  $config->save();
+
+  // Migrate rule definitions to config.
+  css_injector_rule_config_move();
+
+  // Add the css_text to config to facilitate config deployment.
+  css_injector_rule_css_config_add();
+
+  // Clear the CSS Injector cache as rule definitions are now stored in config
+  // and can use the _config_static optimizations instead.
+  cache_clear_all('css_injector:*', 'cache', TRUE);
 }
 
 /**
@@ -80,6 +88,7 @@ function css_injector_update_1000() {
   $default_theme = config_get('system.core', 'theme_default');
 
   $config = config('css_injector.settings');
+  $config->setStatic();
   $config->set('css_injector_use_ace', update_variable_get('css_injector_use_ace', TRUE));
   $config->set('css_injector_default_theme', update_variable_get('css_injector_default_theme', $default_theme));
   $config->save();
@@ -87,23 +96,31 @@ function css_injector_update_1000() {
   // Delete variables.
   update_variable_del('css_injector_use_ace');
   update_variable_del('css_injector_default_theme');
+
+  // Migrate rule definitions to config.
+  css_injector_rule_config_move();
+
+  // Add the css_text to config to facilitate config deployment.
+  css_injector_rule_css_config_add();
 }
 
 /**
  * Implements hook_uninstall().
  */
 function css_injector_uninstall() {
-  cache_clear_all('css_injector:*', 'cache', TRUE);
-  $rules = db_query("SELECT * FROM {css_injector_rule}", array(), array('fetch' => PDO::FETCH_ASSOC))->fetchAllAssoc('crid');
+  // Get the rule definitions from config.
+  $rules = config_get('css_injector.rules_definition', 'rules');
   module_load_include('module', 'css_injector');
-  foreach($rules as $crid => $rule) {
+  // Loop through each rule and delete the CSSfile for that rule.
+  foreach ($rules as $crid => $rule) {
     file_unmanaged_delete(_css_injector_rule_uri($crid));
   }
-  db_drop_table('css_injector_rule');
 }
 
 /**
  * Implements hook_requirements().
+
+*
  * We'll use this to prevent installation of the module if the file directory
  * is not available and writable.
  */

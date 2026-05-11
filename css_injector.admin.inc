@@ -11,13 +11,13 @@ function css_injector_admin_form($form, &$form_state) {
   _css_injector_update_breadcrumb();
 
   $rules = _css_injector_load_rule(NULL, TRUE);
-  $path = backdrop_get_path('module', 'css_injector') . '/';
+  $path = backdrop_get_path('module', 'css_injector');
   $form = array();
   $form['#tree'] = TRUE;
 
   // Adding css stylesheet for icons.
   $form['#attached']['css'] = array(
-    backdrop_get_path('module', 'css_injector') . '/css_injector.css',
+    $path . '/css_injector.css',
   );
 
   foreach ($rules as $rule) {
@@ -108,13 +108,9 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
 
   if (isset($crid) && is_numeric($crid)) {
     $rule = _css_injector_load_rule($crid, TRUE);
-    $path = _css_injector_rule_uri($rule['crid']);
-    if (file_exists($path)) {
-      $rule['css_text'] = file_get_contents($path);
-    }
-    else {
-      $rule['css_text'] = '';
-    }
+    // Load the css text from config. It is stored separately for performance
+    // reasons.
+    $rule['css_text'] = config_get('css_injector.rules_css', 'rules.' . $crid . '.css_text');
   }
   else if (!isset($crid)) {
     $rule = array(
@@ -181,10 +177,9 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
 
   // Get info of site themes.
   $themes = _css_injector_get_themes();
-
-  $rule['rule_themes'] = unserialize($rule['rule_themes']);
-
   $default_theme = config_get('system.core', 'theme_default');
+
+  // Check the rule themes, using the default theme if not set.
   $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
   $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
@@ -294,17 +289,29 @@ function css_injector_edit_validate($form, &$form_state) {
  * Submit button callback for the CSS rule edit form.
  */
 function css_injector_edit_save($form, &$form_state) {
-  //$themes = implode('//', $form_state['values']['themes']);
-  $rule = $form_state['values'];
-  $crid = !empty($form_state['values']['crid']) ? $form_state['values']['crid'] : NULL;
-  // Serialize themes list before inserting to databse.
-  $rule['rule_themes'] = serialize($rule['rule_themes']);
-  backdrop_write_record('css_injector_rule', $rule, empty($crid) ? array() : 'crid');
-  // Unserialize themes list for form state.
-  $rule['rule_themes'] = unserialize($rule['rule_themes']);
-  $form_state['values']['rule'] = $rule;
-  file_unmanaged_save_data($rule['css_text'], _css_injector_rule_uri($rule['crid']), FILE_EXISTS_REPLACE);
-  _css_injector_load_rule(NULL, TRUE);
+
+  $rule_form = $form_state['values'];
+  $crid = !empty($rule_form['crid']) ? $rule_form['crid'] : NULL;
+
+  if (is_null($crid)) {
+    $all_rules = _css_injector_load_rule();
+    $crid = !empty($all_rules) ? max(array_keys($all_rules)) + 1 : 1;
+  }
+  $rule = array(
+    'crid' => $crid,
+    'title' => $rule_form['title'],
+    'rule_type' => $rule_form['rule_type'],
+    'rule_themes' => $rule_form['rule_themes'],
+    'rule_conditions' => $rule_form['rule_conditions'],
+    'media' => $rule_form['media'],
+    'preprocess' => $rule_form['preprocess'],
+    'enabled' => $rule_form['enabled'],
+  );
+  config_set('css_injector.rules_definition', 'rules.' . $crid, $rule);
+  // Save the CSS text to config AND file. The config allows CSS to be deployed
+  // using config methods and the file is saved to allow for CSS optimization.
+  config_set('css_injector.rules_css', 'rules.' . $crid . '.css_text', $rule_form['css_text']);
+  file_unmanaged_save_data($rule_form['css_text'], _css_injector_rule_uri($rule['crid']), FILE_EXISTS_REPLACE);
 
   backdrop_set_message(t('Your CSS injection rule %title was saved.', array('%title' => $rule['title'])));
   $form_state['redirect'] = 'admin/config/development/css-injector';
