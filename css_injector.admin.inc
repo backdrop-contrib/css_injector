@@ -211,8 +211,8 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   $php_access = (user_access('use PHP for settings') && module_exists('php'));
 
   $options = array(
-    CSS_INJECTOR_PAGES_NOTLISTED => t('Add on every page except the listed pages.'),
-    CSS_INJECTOR_PAGES_LISTED => t('add on only the listed pages.')
+    CSS_INJECTOR_PAGES_LISTED => t('Add on the following pages'),
+    CSS_INJECTOR_PAGES_NOTLISTED => t('Add on all pages except the following pages'),
   );
   $description = t("Enter one page per line as Backdrop paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
 
