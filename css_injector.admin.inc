@@ -127,7 +127,6 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
 
   if (config_get('css_injector.settings', 'css_injector_use_ace') && !module_exists('ace_editor')) {
     // Adding ace syntax highlighter.
-
     $form['#attached']['js'] = array(
       'https://cdnjs.cloudflare.com/ajax/libs/ace/1.34.1/ace.js' => array(
         'preprocess' => FALSE,
@@ -149,7 +148,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   }
 
   if (isset($crid)) {
-  $form['crid'] = array(
+    $form['crid'] = array(
       '#type' => 'value',
       '#value' => $crid,
     );
@@ -188,12 +187,12 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   }
 
   $form['conditional']['rule_themes'] = array(
-  '#type' => 'select',
-  '#title' => 'Themes to show on',
-  '#default_value' => $rule_themes,
-  '#options' => $themes,
-  '#description' => t('Select themes css will be applied to. @theme theme is selected by default.', array('@theme' => $themes[$default_theme])),
-  '#multiple' => TRUE,
+    '#type' => 'select',
+    '#title' => 'Themes to show on',
+    '#default_value' => $rule_themes,
+    '#options' => $themes,
+    '#description' => t('Select themes css will be applied to. @theme theme is selected by default.', array('@theme' => $themes[$default_theme])),
+    '#multiple' => TRUE,
   );
 
   // XXX The php filter that allows embedded PHP code/snippets to be evaluated
@@ -202,14 +201,18 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   // a contrib module.  If not, it should eventually be removed.
   // There has been a lot of discussion on the issue.
   // https://www.drupal.org/project/drupal/issues/1203886
-  // - Vincent Stemen Sun Apr 22 2018  
+  // - Vincent Stemen Sun Apr 22 2018.
   $php_access = (user_access('use PHP for settings') && module_exists('php'));
 
   $options = array(
     CSS_INJECTOR_PAGES_NOTLISTED => t('Add on every page except the listed pages.'),
-    CSS_INJECTOR_PAGES_LISTED => t('add on only the listed pages.')
+    CSS_INJECTOR_PAGES_LISTED => t('add on only the listed pages.'),
   );
-  $description = t("Enter one page per line as Backdrop paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+  $description = t("Enter one page per line as Backdrop paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array(
+    '%blog' => 'blog',
+    '%blog-wildcard' => 'blog/*',
+    '%front' => '<front>',
+  ));
 
   if ($php_access) {
     $options[CSS_INJECTOR_PHP] = t('Add if the following PHP code outputs a nonzero value (PHP-mode, experts only).');
@@ -355,5 +358,4 @@ function css_injector_delete_confirm_submit($form, &$form_state) {
   }
 
   $form_state['redirect'] = 'admin/config/development/css-injector';
-  return;
 }

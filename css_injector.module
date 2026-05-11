@@ -1,12 +1,10 @@
 <?php
-
 /**
  * @file
  * Allows administrators to inject CSS into the page output based on
  * configurable rules. Useful for adding simple CSS tweaks without modifying
  * a site's official theme.
  */
-
 
 /**
  * Deploy this CSS snippet on every page except the listed pages.
@@ -25,6 +23,7 @@ define('CSS_INJECTOR_PHP', 2);
 
 /**
  * Implements hook_init().
+ *
  * Checks to see whether any CSS files should be added to the current page,
  * based on rules configured by the site administrator.
  */
@@ -36,12 +35,17 @@ function css_injector_init() {
         $file_uri = _css_injector_rule_uri($css_rule['crid']);
         $theme_rules = isset($css_rule['rule_themes']) ? $css_rule['rule_themes'] : array();
         global $theme;
-        if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, true)) {
+        if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, TRUE)) {
           switch ($css_rule['media']) {
             case 'all':
             case 'screen':
             case 'print':
-              backdrop_add_css($file_uri, array('type' => 'file','group' => CSS_THEME,'media' => $css_rule['media'],'preprocess' => $css_rule['preprocess']));
+              backdrop_add_css($file_uri, array(
+                'type' => 'file',
+                'group' => CSS_THEME,
+                'media' => $css_rule['media'],
+                'preprocess' => $css_rule['preprocess'],
+              ));
               break;
 
             case 'IE 7':
@@ -63,15 +67,16 @@ function css_injector_init() {
 
 /**
  * Implements hook_css_alter().
+ *
  * Since we're trying to give the administrator complete control, we'll move
  * CSS that this module has added to a high weight, higher even than the theme's
  * CSS files. Currently the weight is 200 + the crid, which is currently higher
  * than Bartik's CSS.
  *
- * @param $css
+ * @param array $css
  *   The array of CSS files.
  */
-function css_injector_css_alter(&$css) {
+function css_injector_css_alter(array &$css) {
   $css_rules = _css_injector_load_rule();
   foreach ($css_rules as $css_rule) {
     $file_uri = _css_injector_rule_uri($css_rule['crid']);
@@ -83,6 +88,7 @@ function css_injector_css_alter(&$css) {
 
 /**
  * Implements hook_menu().
+ *
  * Defines menu callbacks for CSS Injector's configuration pages.
  */
 function css_injector_menu() {
@@ -145,7 +151,7 @@ function css_injector_admin() {
   $themes = _css_injector_get_themes();
   $default_theme = config_get('system.core', 'theme_default');
   $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
-  $rule_themes = isset($rule_themes) ? $rule_themes: $default_theme;
+  $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
   $form['css_injector_default_theme'] = array(
     '#type' => 'select',
@@ -228,10 +234,10 @@ function _css_injector_delete_rule($crid) {
 /**
  * Helper function to determine whether a rule's conditions are met.
  *
- * @param $css_rule
+ * @param array $css_rule
  *   Array describing the rule.
  */
-function _css_injector_evaluate_rule($css_rule = array()) {
+function _css_injector_evaluate_rule(array $css_rule = array()) {
   // Match path if necessary.
   if (!empty($css_rule['rule_conditions'])) {
     if ($css_rule['rule_type'] < CSS_INJECTOR_PHP) {
@@ -265,7 +271,7 @@ function _css_injector_evaluate_rule($css_rule = array()) {
 
 /**
  * Return the URI for a crid.
- * @param $crid
+ * @param int $crid
  *   The integer identifying the CSS Rule ID (crid)
  */
 function _css_injector_rule_uri($crid) {
@@ -282,7 +288,7 @@ function _css_injector_get_themes() {
   $themes = array();
   $theme_list = list_themes();
   foreach ($theme_list as $single_theme) {
-    //
+    // Check the theme is enabled and the theme file exists.
     if ($single_theme->status && file_exists($single_theme->filename)) {
       $themes[$single_theme->name] = $single_theme->info['name'];
     }

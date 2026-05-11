@@ -8,3 +8,6 @@ maintainers[vstemen] = Vincent Stemen
 maintainers[klonos] = klonos
 maintainers[yorkshire-pudding] = Martin Price
 maintainers_wanted = TRUE
+
+package = Appearance
+tags[] = Theme Enhancements
