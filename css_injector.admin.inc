@@ -11,35 +11,47 @@ function css_injector_admin_form($form, &$form_state) {
   _css_injector_update_breadcrumb();
 
   $rules = _css_injector_load_rule(NULL, TRUE);
-  $path = backdrop_get_path('module', 'css_injector') . '/';
   $form = array();
   $form['#tree'] = TRUE;
 
-  // Adding css stylesheet for icons.
-  $form['#attached']['css'] = array(
-    backdrop_get_path('module', 'css_injector') . '/css_injector.css',
-  );
-
   foreach ($rules as $rule) {
     $form['rules'][$rule['crid']]['#rule'] = $rule;
-    $form['rules'][$rule['crid']]['edit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Edit rule'),
-      '#name' => 'edit' . $rule['crid'],
-      '#submit' => array('css_injector_admin_edit_button'),
-      '#attributes' => array('class' => array('css-inject-edit')),
-      '#crid' => $rule['crid'],
+    $form['rules'][$rule['crid']]['enabled'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $rule['enabled'],
     );
-    $form['rules'][$rule['crid']]['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete rule'),
-      '#name' => 'delete' . $rule['crid'],
-      '#submit' => array('css_injector_admin_delete_button'),
-      '#attributes' => array('class' => array('css-inject-delete')),
-      '#crid' => $rule['crid'],
+    $form['rules'][$rule['crid']]['actions'] = array(
+      '#type' => 'dropbutton',
+      '#links' => array(
+        'edit_rule' => array(
+          'title' => t('Edit Rule'),
+          'href' => 'admin/config/development/css-injector/edit/' . $crid,
+        ),
+        'delete_rule' => array(
+          'title' => t('Delete Rule'),
+          'href' => 'admin/config/development/css-injector/delete/' . $crid,
+        ),
+      ),
     );
   }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
   return $form;
+}
+
+/**
+ * Submit button callback for the admin overview form.
+ */
+function css_injector_admin_form_submit($form, &$form_state) {
+  $rules = $form_state['values']['rules'];
+  $config = config('css_injector.rules_definition');
+  foreach ($rules as $crid => $rule) {
+    $config->set('rules.' . $crid . '.enabled', $rule['enabled']);
+  }
+  $config->save();
+  backdrop_set_message(t('Configuration saved.'));
 }
 
 /**
@@ -66,7 +78,7 @@ function css_injector_admin_delete_button($form, &$form_state) {
  */
 function theme_css_injector_admin_form($variables) {
   $form = $variables['form'];
-  $headers = array(t('Title'), t('Location'), t('Actions'));
+  $headers = array(t('Title'), t('Location'), t('Enabled'), t('Actions'));
   $rows = array();
   if (!empty($form['rules'])) {
     foreach (element_children($form['rules']) as $crid) {
@@ -74,28 +86,20 @@ function theme_css_injector_admin_form($variables) {
       $rule = $form['rules'][$crid]['#rule'];
       $row[] = check_plain($rule['title']);
       $row[] = _css_injector_rule_uri($rule['crid']);
-      $row[] = backdrop_render($form['rules'][$crid]);
+      // $row[] = backdrop_render($form['rules'][$crid]);
+      $row[] = array(
+        'data' => backdrop_render($form['rules'][$crid]['enabled']),
+        'align' => 'center');
+      $rows[] = $form['rules'][$crid]['actions'];
       $rows[] = $row;
     }
   }
 
-  $link = l(t('Create a new rule'), 'admin/config/development/css-injector/add');
-  $row = array();
-  if (empty($rows)) {
-    $row[] = array(
-      'data' => t('No CSS injection rules have been set up yet. !url.', array('!url' => $link)),
-      'colspan' => 3,
-    );
-  }
-  else {
-    $row[] = array(
-      'data' => t('!url.', array('!url' => $link)),
-      'colspan' => 3,
-    );
-  }
-  $rows[] = $row;
-
-  $output = theme('table', array('header' => $headers, 'rows' => $rows));
+  $output = theme('table', array(
+    'header' => $headers,
+    'rows' => $rows,
+    'empty' => t('No CSS injection rules have been set up yet.'),
+  ));
   $output .= backdrop_render_children($form);
   return $output;
 }
