@@ -119,7 +119,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   else if (!isset($crid)) {
     $rule = array(
       'title' => '',
-      'rule_type' => CSS_INJECTOR_PAGES_NOTLISTED,
+      'rule_type' => CSS_INJECTOR_PAGES_LISTED,
       'rule_themes' => '',
       'rule_conditions' => '',
       'media' => 'all',
@@ -231,6 +231,11 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#title' => t('Pages'),
     '#default_value' => $rule['rule_conditions'],
     '#description' => $description,
+    '#states' => array(
+      'required' => array(
+        ':input[name="conditional[ruletype]"]' => array('value' => 1),
+      ),
+    ),
   );
   $form['media'] = array(
     '#type' => 'select',
@@ -287,6 +292,9 @@ function css_injector_edit_validate($form, &$form_state) {
   $directory = 'public://css_injector';
   if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
     form_error($form, t('The directory %directory is not writable', array('%directory' => $directory)));
+  }
+  if ($form_state['values']['condition']['rule_type'] == CSS_INJECTOR_PAGES_LISTED && empty($form_state['values']['condition']['rule_conditions'])) {
+    form_error($form['condition']['rule_conditions'], t("If the rule type is 'Add on the following pages' then at least one page path must be entered."));
   }
 }
 
