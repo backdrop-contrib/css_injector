@@ -115,7 +115,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   else if (!isset($crid)) {
     $rule = array(
       'title' => '',
-      'rule_type' => CSS_INJECTOR_PAGES_NOTLISTED,
+      'rule_type' => CSS_INJECTOR_PAGES_LISTED,
       'rule_themes' => '',
       'rule_conditions' => '',
       'media' => 'all',
@@ -205,8 +205,8 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   $php_access = (user_access('use PHP for settings') && module_exists('php'));
 
   $options = array(
-    CSS_INJECTOR_PAGES_NOTLISTED => t('Add on every page except the listed pages.'),
-    CSS_INJECTOR_PAGES_LISTED => t('add on only the listed pages.'),
+    CSS_INJECTOR_PAGES_LISTED => t('Add on the following pages'),
+    CSS_INJECTOR_PAGES_NOTLISTED => t('Add on all pages except the following pages'),
   );
   $description = t("Enter one page per line as Backdrop paths. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array(
     '%blog' => 'blog',
@@ -229,6 +229,11 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#title' => t('Pages'),
     '#default_value' => $rule['rule_conditions'],
     '#description' => $description,
+    '#states' => array(
+      'required' => array(
+        ':input[name="rule_type"]' => array('value' => 1),
+      ),
+    ),
   );
   $form['media'] = array(
     '#type' => 'select',
@@ -255,19 +260,24 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#default_value' => isset($rule['enabled']) ? $rule['enabled'] : 1,
   );
 
-  $form['buttons']['save'] = array(
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['save'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
     '#submit' => array('css_injector_edit_save'),
   );
-  $form['buttons']['save_and_continue'] = array(
+  $form['actions']['save_and_continue'] = array(
     '#type' => 'submit',
     '#value' => t('Save and Continue Editing'),
     '#submit' => array('css_injector_edit_save_and_continue'),
   );
-
+  $form['actions']['cancel'] = array(
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+    '#submit' => array('css_injector_edit_cancel'),
+  );
   if (!empty($rule['crid'])) {
-    $form['buttons']['delete'] = array(
+    $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#crid' => $rule['crid'],
@@ -285,6 +295,9 @@ function css_injector_edit_validate($form, &$form_state) {
   $directory = 'public://css_injector';
   if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
     form_error($form, t('The directory %directory is not writable', array('%directory' => $directory)));
+  }
+  if ($form_state['values']['rule_type'] == CSS_INJECTOR_PAGES_LISTED && empty($form_state['values']['rule_conditions'])) {
+    form_error($form['conditional']['rule_conditions'], t("If the rule type is 'Add on the following pages' then at least one page path must be entered."));
   }
 }
 
@@ -328,6 +341,12 @@ function css_injector_edit_save_and_continue($form, &$form_state) {
   $form_state['redirect'] = 'admin/config/development/css-injector/edit/' . $form_state['values']['rule']['crid'];
 }
 
+/**
+ * Cancel callback for the CSS rule edit form.
+ */
+function css_injector_edit_cancel($form, &$form_state) {
+  $form_state['redirect'] = 'admin/config/development/css-injector';
+}
 
 /**
  * Menu callback -- ask for confirmation of rule deletion.
