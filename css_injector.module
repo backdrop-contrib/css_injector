@@ -192,6 +192,8 @@ function css_injector_permission() {
   return array(
     'administer css injection' => array(
       'title' => t('Administer CSS Injection'),
+      'restrict access' => TRUE,
+      'warning' => t('CSS injected to the site could have wide impacts and could be abused.'),
     ),
   );
 }
@@ -328,4 +330,3 @@ function css_injector_config_info() {
   );
   return $prefixes;
 }
-
