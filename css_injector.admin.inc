@@ -231,7 +231,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#description' => $description,
     '#states' => array(
       'required' => array(
-        ':input[name="rule_type"]' => array('value' => 1),
+        ':input[name="rule_type"]' => array('value' => CSS_INJECTOR_PAGES_LISTED),
       ),
     ),
   );
