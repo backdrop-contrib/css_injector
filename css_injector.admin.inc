@@ -115,15 +115,16 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     $rule['css_text'] = config_get('css_injector.rules_css', 'rules.' . $crid . '.css_text');
   }
   else if (!isset($crid)) {
+    $input = !empty($form_state['input']) ? $form_state['input'] : NULL;
     $rule = array(
-      'title' => '',
-      'rule_type' => CSS_INJECTOR_PAGES_LISTED,
-      'rule_themes' => '',
-      'rule_conditions' => '',
-      'media' => 'all',
-      'preprocess' => 1,
-      'css_text' => '',
-      'enabled' => 1,
+      'title' => $input['title'] ?? '',
+      'rule_type' => $input['rule_type'] ?? CSS_INJECTOR_PAGES_LISTED,
+      'rule_themes' => $input['rule_themes'] ?? '',
+      'rule_conditions' => $input['rule_conditions'] ?? '',
+      'media' => $input['media'] ?? 'all',
+      'preprocess' => $input['preprocess'] ?? 1,
+      'css_text' => $input['css_text'] ?? '',
+      'enabled' => $input['enabled'] ?? 1,
     );
   }
 
@@ -274,13 +275,15 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#type' => 'submit',
     '#value' => t('Cancel'),
     '#submit' => array('css_injector_edit_cancel'),
+    '#limit_validation_errors' => array(),
   );
   if (!empty($rule['crid'])) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#crid' => $rule['crid'],
-      '#submit' => array('css_injector_admin_delete_button'),
+      '#submit' => array('css_injector_edit_delete_button'),
+      '#limit_validation_errors' => array(),
     );
   }
 
@@ -345,6 +348,16 @@ function css_injector_edit_save_and_continue($form, &$form_state) {
  */
 function css_injector_edit_cancel($form, &$form_state) {
   $form_state['redirect'] = 'admin/config/development/css-injector';
+}
+
+/**
+ * Delete button callback for the CSS rule edit form.
+ * Redirects the user to the confirmation form.
+ */
+function css_injector_edit_delete_button($form, &$form_state) {
+  $button = $form_state['triggering_element'];
+  $crid = $button['#crid'];
+  $form_state['redirect'] = 'admin/config/development/css-injector/delete/' . $crid;
 }
 
 /**
