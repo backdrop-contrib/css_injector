@@ -130,13 +130,13 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   if (config_get('css_injector.settings', 'css_injector_use_ace') && !module_exists('ace_editor')) {
     // Adding ace syntax highlighter.
     $form['#attached']['js'] = array(
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.34.1/ace.js' => array(
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ace.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.34.1/theme-chrome.js' => array(
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/theme-chrome.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.34.1/mode-css.js' => array(
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/mode-css.js' => array(
         'preprocess' => FALSE,
       ),
       $module_path . '/js/syntax_highlighter.js' => array(
