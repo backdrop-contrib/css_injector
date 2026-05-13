@@ -36,29 +36,12 @@ function css_injector_init() {
         $theme_rules = isset($css_rule['rule_themes']) ? $css_rule['rule_themes'] : array();
         global $theme;
         if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, TRUE)) {
-          switch ($css_rule['media']) {
-            case 'all':
-            case 'screen':
-            case 'print':
-              backdrop_add_css($file_uri, array(
-                'type' => 'file',
-                'group' => CSS_THEME,
-                'media' => $css_rule['media'],
-                'preprocess' => $css_rule['preprocess'],
-              ));
-              break;
-
-            case 'IE 7':
-            case 'IE 8':
-            case 'IE 9':
-              backdrop_add_css($file_uri, array(
-                'group' => CSS_THEME,
-                'browsers' => array('IE' => $css_rule['media'], '!IE' => FALSE),
-                'preprocess' => $css_rule['preprocess'])
-              );
-              break;
-
-          }
+          backdrop_add_css($file_uri, array(
+            'type' => 'file',
+            'group' => CSS_THEME,
+            'media' => $css_rule['media'],
+            'preprocess' => $css_rule['preprocess'],
+          ));
         }
       }
     }
