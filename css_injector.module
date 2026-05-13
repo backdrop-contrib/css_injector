@@ -94,7 +94,7 @@ function css_injector_css_alter(array &$css) {
 function css_injector_menu() {
   $items = array(
     'admin/config/development/css-injector' => array(
-      'title' => 'CSS injector',
+      'title' => 'CSS Injector',
       'description' => 'Add CSS to the page output based on configurable rules.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_admin_form'),
@@ -108,14 +108,14 @@ function css_injector_menu() {
     ),
     'admin/config/development/css-injector/settings' => array(
       'title' => 'Settings',
-      'description' => 'Settings page for CSS injector module.',
+      'description' => 'Settings page for CSS Injector module.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_admin'),
       'access arguments' => array('administer css injection settings'),
       'type' => MENU_LOCAL_TASK,
     ),
     'admin/config/development/css-injector/add' => array(
-      'title' => 'Add CSS injector rule',
+      'title' => 'Add CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
@@ -123,7 +123,7 @@ function css_injector_menu() {
       'type' => MENU_LOCAL_ACTION,
     ),
     'admin/config/development/css-injector/edit' => array(
-      'title' => 'Edit CSS injector rule',
+      'title' => 'Edit CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
@@ -131,7 +131,7 @@ function css_injector_menu() {
       'type' => MENU_CALLBACK,
     ),
     'admin/config/development/css-injector/delete' => array(
-      'title' => 'Delete CSS injector rule',
+      'title' => 'Delete CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_delete_confirm'),
       'access arguments' => array('administer css injection'),
@@ -155,7 +155,7 @@ function css_injector_admin() {
 
   $form['css_injector_default_theme'] = array(
     '#type' => 'select',
-    '#title' => t('CSS injector default themes'),
+    '#title' => t('CSS Injector default themes'),
     '#options' => $themes,
     '#default_value' => $rule_themes,
     '#description' => t('Select themes css will be applied to. @theme theme is selected by default.', array('@theme' => $themes[$default_theme])),
@@ -319,7 +319,7 @@ function _css_injector_update_breadcrumb() {
 function css_injector_config_info() {
   $config_info = array(
     'css_injector.settings' => array(
-      'label' => t('CSS Injector settings'),
+      'label' => t('CSS Injector Settings'),
       'group' => t('Configuration'),
     ),
     'css_injector.rules_definition' => array(
