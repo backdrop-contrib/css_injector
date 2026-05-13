@@ -5,7 +5,7 @@
  */
 
 /**
- * Form builder function for CSS Injector's main admin page.
+ * Form builder function for CSS Injector's main admin (rule overview) page.
  */
 function css_injector_admin_form($form, &$form_state) {
   _css_injector_update_breadcrumb();
@@ -14,13 +14,16 @@ function css_injector_admin_form($form, &$form_state) {
   $form = array();
   $form['#tree'] = TRUE;
 
-  foreach ($rules as $rule) {
-    $form['rules'][$rule['crid']]['#rule'] = $rule;
-    $form['rules'][$rule['crid']]['enabled'] = array(
+  // Loop through each rule and define the fields.
+  foreach ($rules as $crid => $rule) {
+    $form['rules'][$crid]['#rule'] = $rule;
+    // Add a checkbox to enable or disable each rule in addition to showing the
+    // status of the rule.
+    $form['enabled'][$crid] = array(
       '#type' => 'checkbox',
       '#default_value' => $rule['enabled'],
     );
-    $form['rules'][$rule['crid']]['actions'] = array(
+    $form['rules'][$crid]['rule_actions'] = array(
       '#type' => 'dropbutton',
       '#links' => array(
         'edit_rule' => array(
@@ -34,7 +37,9 @@ function css_injector_admin_form($form, &$form_state) {
       ),
     );
   }
-  $form['submit'] = array(
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
@@ -42,66 +47,58 @@ function css_injector_admin_form($form, &$form_state) {
 }
 
 /**
- * Submit button callback for the admin overview form.
+ * Submit button callback for the admin (rule overview) form.
  */
 function css_injector_admin_form_submit($form, &$form_state) {
-  $rules = $form_state['values']['rules'];
+  // Load the config for rule definitions.
   $config = config('css_injector.rules_definition');
-  foreach ($rules as $crid => $rule) {
-    $config->set('rules.' . $crid . '.enabled', $rule['enabled']);
+
+  // Get the Enabled state of each rule from the form.
+  $rule_status = $form_state['values']['enabled'];
+
+  // Loop through each rule and set the 'Enabled' config value.
+  foreach ($rule_status as $crid => $status) {
+    $config->set('rules.' . $crid . '.enabled', $status);
   }
+
+  // Save the config and provide a message.
   $config->save();
   backdrop_set_message(t('Configuration saved.'));
 }
 
 /**
- * Edit button callback for the CSS rule listing form.
- */
-function css_injector_admin_edit_button($form, &$form_state) {
-  $button = $form_state['triggering_element'];
-  $crid = $button['#crid'];
-  $form_state['redirect'] = 'admin/config/development/css-injector/edit/' . $crid;
-}
-
-/**
- * Delete button callback for the CSS rule listing form.
- * Redirects the user to the confirmation form.
- */
-function css_injector_admin_delete_button($form, &$form_state) {
-  $button = $form_state['triggering_element'];
-  $crid = $button['#crid'];
-  $form_state['redirect'] = 'admin/config/development/css-injector/delete/' . $crid;
-}
-
-/**
- * Theme function for the CSS Injector admin overview form.
+ * Theme function for the CSS Injector admin (rule overview) form.
  */
 function theme_css_injector_admin_form($variables) {
   $form = $variables['form'];
-  $headers = array(t('Title'), t('Location'), t('Enabled'), t('Actions'));
+  $headers = array(
+    t('Enabled'),
+    t('Title'),
+    t('Location'),
+    t('Actions'),
+  );
   $rows = array();
   if (!empty($form['rules'])) {
     foreach (element_children($form['rules']) as $crid) {
-      $row = array();
       $rule = $form['rules'][$crid]['#rule'];
-      $row[] = check_plain($rule['title']);
-      $row[] = _css_injector_rule_uri($rule['crid']);
-      // $row[] = backdrop_render($form['rules'][$crid]);
-      $row[] = array(
-        'data' => backdrop_render($form['rules'][$crid]['enabled']),
-        'align' => 'center');
-      $rows[] = $form['rules'][$crid]['actions'];
+      $row = array(
+        backdrop_render($form['enabled'][$crid]),
+        check_plain($rule['title']),
+        _css_injector_rule_uri($crid),
+        backdrop_render($form['rules'][$crid]['rule_actions']),
+      );
       $rows[] = $row;
     }
   }
 
-  $output = theme('table', array(
-    'header' => $headers,
-    'rows' => $rows,
-    'empty' => t('No CSS injection rules have been set up yet.'),
-  ));
-  $output .= backdrop_render_children($form);
-  return $output;
+  $form['rules'] = array(
+    '#theme' => 'table',
+    '#header' => $headers,
+    '#rows' => $rows,
+    '#empty' => t('No CSS injection rules have been set up yet.'),
+  );
+
+  return backdrop_render_children($form);
 }
 
 /**
@@ -109,6 +106,7 @@ function theme_css_injector_admin_form($variables) {
  */
 function css_injector_edit($form, $form_state, $crid = NULL) {
   _css_injector_update_breadcrumb();
+  $module_path = backdrop_get_path('module', 'css_injector');
 
   if (isset($crid) && is_numeric($crid)) {
     $rule = _css_injector_load_rule($crid, TRUE);
@@ -141,13 +139,13 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
       'https://cdnjs.cloudflare.com/ajax/libs/ace/1.34.1/mode-css.js' => array(
         'preprocess' => FALSE,
       ),
-      backdrop_get_path('module', 'css_injector') . '/syntax_highlighter.js' => array(
+      $module_path . '/js/syntax_highlighter.js' => array(
         'preprocess' => FALSE,
       ),
     );
 
     $form['#attached']['css'] = array(
-      backdrop_get_path('module', 'css_injector') . '/syntax_highlighter.css',
+      $module_path . '/css/syntax_highlighter.css',
     );
   }
 
