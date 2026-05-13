@@ -253,7 +253,7 @@ function _css_injector_evaluate_rule(array $css_rule = array()) {
       // CSS_INJECTOR_PAGES_NOTLISTED, the rule is matched on
       // all pages except those listed in $css_rule['rule_conditions'].
       // When set to CSS_INJECTOR_PAGES_LISTED, it is displayed only on those
-      // pages listed in $css_rule['rule_type'].
+      // pages listed in $css_rule['rule_conditions'].
       $page_match = !($css_rule['rule_type'] xor $page_match);
     }
     else {
