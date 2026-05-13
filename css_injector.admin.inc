@@ -244,9 +244,6 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
       'all' => t('All'),
       'screen' => t('Screen'),
       'print' => t('Print'),
-      'IE 7' => t('IE7'),
-      'IE 8' => t('IE8'),
-      'IE 9' => t('IE9'),
     ),
     '#default_value' => $rule['media'],
   );

@@ -6,6 +6,45 @@
  */
 
 /**
+ * Implements hook_requirements().
+
+*
+ * We'll use this to prevent installation of the module if the file directory
+ * is not available and writable.
+ */
+function css_injector_requirements($phase) {
+  $status = REQUIREMENT_OK;
+  $dir = 'public://css_injector';
+  if (!file_prepare_directory($dir, FILE_MODIFY_PERMISSIONS)) {
+    if (!file_prepare_directory($dir, FILE_CREATE_DIRECTORY)) {
+      $status = REQUIREMENT_ERROR;
+    }
+  }
+  $requirements = array(
+    'css_injector' => array(
+      'title' => t('CSS Injector directory writable'),
+      'description' => $status == REQUIREMENT_OK ? t('CSS Injector Directory %dir is writable', array('%dir' => $dir)) : t('Directory %dir is not writable', array('%dir' => $dir)),
+      'severity' => $status,
+      'value' => $status == REQUIREMENT_OK ? t('Writable') : t('Not writable'),
+    ),
+  );
+  return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function css_injector_uninstall() {
+  // Get the rule definitions from config.
+  $rules = config_get('css_injector.rules_definition', 'rules');
+  module_load_include('module', 'css_injector');
+  // Loop through each rule and delete the CSSfile for that rule.
+  foreach ($rules as $crid => $rule) {
+    file_unmanaged_delete(_css_injector_rule_uri($crid));
+  }
+}
+
+/**
  * Implements hook_update_last_removed().
  */
 function css_injector_update_last_removed() {
@@ -61,27 +100,6 @@ function css_injector_rule_css_config_add() {
 }
 
 /**
- * Migrate css_injector rule definitions to config and set existing config
- * to static.
- */
-function css_injector_update_1001() {
-  // Set existing config as static.
-  $config = config('css_injector.settings');
-  $config->setStatic();
-  $config->save();
-
-  // Migrate rule definitions to config.
-  css_injector_rule_config_move();
-
-  // Add the css_text to config to facilitate config deployment.
-  css_injector_rule_css_config_add();
-
-  // Clear the CSS Injector cache as rule definitions are now stored in config
-  // and can use the _config_static optimizations instead.
-  cache_clear_all('css_injector:*', 'cache', TRUE);
-}
-
-/**
  * Move css_injector settings from Drupal 7 variables to config.
  */
 function css_injector_update_1000() {
@@ -106,40 +124,43 @@ function css_injector_update_1000() {
 }
 
 /**
- * Implements hook_uninstall().
+ * Migrate css_injector rule definitions to config and set existing config
+ * to static.
  */
-function css_injector_uninstall() {
-  // Get the rule definitions from config.
-  $rules = config_get('css_injector.rules_definition', 'rules');
-  module_load_include('module', 'css_injector');
-  // Loop through each rule and delete the CSSfile for that rule.
-  foreach ($rules as $crid => $rule) {
-    file_unmanaged_delete(_css_injector_rule_uri($crid));
-  }
+function css_injector_update_1001() {
+  // Set existing config as static.
+  $config = config('css_injector.settings');
+  $config->setStatic();
+  $config->save();
+
+  // Migrate rule definitions to config.
+  css_injector_rule_config_move();
+
+  // Add the css_text to config to facilitate config deployment.
+  css_injector_rule_css_config_add();
+
+  // Clear the CSS Injector cache as rule definitions are now stored in config
+  // and can use the _config_static optimizations instead.
+  cache_clear_all('css_injector:*', 'cache', TRUE);
 }
 
 /**
- * Implements hook_requirements().
-
-*
- * We'll use this to prevent installation of the module if the file directory
- * is not available and writable.
+ * Update any IE Media settings to Screen.
  */
-function css_injector_requirements($phase) {
-  $status = REQUIREMENT_OK;
-  $dir = 'public://css_injector';
-  if (!file_prepare_directory($dir, FILE_MODIFY_PERMISSIONS)) {
-    if (!file_prepare_directory($dir, FILE_CREATE_DIRECTORY)) {
-      $status = REQUIREMENT_ERROR;
+function css_injector_update_1002() {
+  // Get the config.
+  $config = config('css_injector.rules_definition');
+  $rules = $config->get('rules');
+  $changed = FALSE;
+  // Loop through each rule.
+  foreach ($rules as $crid => $rule) {
+    if (strpos($rule['media'], 'IE') === 0) {
+      $config->set('rules.' . $crid . '.media', 'screen');
+      $changed = TRUE;
     }
   }
-  $requirements = array(
-    'css_injector' => array(
-      'title' => t('CSS Injector directory writable'),
-      'description' => $status == REQUIREMENT_OK ? t('CSS Injector Directory %dir is writable', array('%dir' => $dir)) : t('Directory %dir is not writable', array('%dir' => $dir)),
-      'severity' => $status,
-      'value' => $status == REQUIREMENT_OK ? t('Writable') : t('Not writable'),
-    ),
-  );
-  return $requirements;
+  // If any rule definitions have changed, save the config.
+  if ($changed) {
+    $config->save();
+  }
 }
