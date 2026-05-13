@@ -1,12 +1,10 @@
 <?php
-
 /**
  * @file
  * Allows administrators to inject CSS into the page output based on
  * configurable rules. Useful for adding simple CSS tweaks without modifying
  * a site's official theme.
  */
-
 
 /**
  * Deploy this CSS snippet on every page except the listed pages.
@@ -25,6 +23,7 @@ define('CSS_INJECTOR_PHP', 2);
 
 /**
  * Implements hook_init().
+ *
  * Checks to see whether any CSS files should be added to the current page,
  * based on rules configured by the site administrator.
  */
@@ -34,14 +33,19 @@ function css_injector_init() {
     if (!isset($css_rule['enabled']) || $css_rule['enabled']) {
       if (_css_injector_evaluate_rule($css_rule)) {
         $file_uri = _css_injector_rule_uri($css_rule['crid']);
-        $theme_rules = isset($css_rule['rule_themes']) ? unserialize($css_rule['rule_themes']) : '';
+        $theme_rules = isset($css_rule['rule_themes']) ? $css_rule['rule_themes'] : array();
         global $theme;
-        if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, true)) {
+        if (!is_array($theme_rules) || empty($theme_rules) || in_array($theme, $theme_rules, TRUE)) {
           switch ($css_rule['media']) {
             case 'all':
             case 'screen':
             case 'print':
-              backdrop_add_css($file_uri, array('type' => 'file','group' => CSS_THEME,'media' => $css_rule['media'],'preprocess' => $css_rule['preprocess']));
+              backdrop_add_css($file_uri, array(
+                'type' => 'file',
+                'group' => CSS_THEME,
+                'media' => $css_rule['media'],
+                'preprocess' => $css_rule['preprocess'],
+              ));
               break;
 
             case 'IE 7':
@@ -63,15 +67,16 @@ function css_injector_init() {
 
 /**
  * Implements hook_css_alter().
+ *
  * Since we're trying to give the administrator complete control, we'll move
  * CSS that this module has added to a high weight, higher even than the theme's
  * CSS files. Currently the weight is 200 + the crid, which is currently higher
  * than Bartik's CSS.
  *
- * @param $css
+ * @param array $css
  *   The array of CSS files.
  */
-function css_injector_css_alter(&$css) {
+function css_injector_css_alter(array &$css) {
   $css_rules = _css_injector_load_rule();
   foreach ($css_rules as $css_rule) {
     $file_uri = _css_injector_rule_uri($css_rule['crid']);
@@ -83,12 +88,13 @@ function css_injector_css_alter(&$css) {
 
 /**
  * Implements hook_menu().
+ *
  * Defines menu callbacks for CSS Injector's configuration pages.
  */
 function css_injector_menu() {
   $items = array(
     'admin/config/development/css-injector' => array(
-      'title' => 'CSS injector',
+      'title' => 'CSS Injector',
       'description' => 'Add CSS to the page output based on configurable rules.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_admin_form'),
@@ -102,14 +108,14 @@ function css_injector_menu() {
     ),
     'admin/config/development/css-injector/settings' => array(
       'title' => 'Settings',
-      'description' => 'Settings page for CSS injector module.',
+      'description' => 'Settings page for CSS Injector module.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_admin'),
       'access arguments' => array('administer css injection settings'),
       'type' => MENU_LOCAL_TASK,
     ),
     'admin/config/development/css-injector/add' => array(
-      'title' => 'Add CSS injector rule',
+      'title' => 'Add CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
@@ -117,7 +123,7 @@ function css_injector_menu() {
       'type' => MENU_LOCAL_ACTION,
     ),
     'admin/config/development/css-injector/edit' => array(
-      'title' => 'Edit CSS injector rule',
+      'title' => 'Edit CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_edit'),
       'access arguments' => array('administer css injection'),
@@ -125,7 +131,7 @@ function css_injector_menu() {
       'type' => MENU_CALLBACK,
     ),
     'admin/config/development/css-injector/delete' => array(
-      'title' => 'Delete CSS injector rule',
+      'title' => 'Delete CSS Injector rule',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_delete_confirm'),
       'access arguments' => array('administer css injection'),
@@ -145,11 +151,11 @@ function css_injector_admin() {
   $themes = _css_injector_get_themes();
   $default_theme = config_get('system.core', 'theme_default');
   $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
-  $rule_themes = isset($rule_themes) ? $rule_themes: $default_theme;
+  $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
   $form['css_injector_default_theme'] = array(
     '#type' => 'select',
-    '#title' => t('CSS injector default themes'),
+    '#title' => t('CSS Injector default themes'),
     '#options' => $themes,
     '#default_value' => $rule_themes,
     '#description' => t('Select themes css will be applied to. @theme theme is selected by default.', array('@theme' => $themes[$default_theme])),
@@ -202,21 +208,10 @@ function css_injector_permission() {
  * Helper function to load all CSS injection rules.
  */
 function _css_injector_load_rule($crid = NULL, $reset = FALSE) {
-  static $rules;
-  // TODO: Change to backdrop_static_fast pattern.
-  if (!isset($rules) || $reset) {
-    if (!$reset && ($cache = cache_get('css_injector:rules')) && is_array($cache->data)) {
-      $rules = $cache->data;
-    }
-    else {
-      $rules = array();
-      $results = db_query("SELECT * FROM {css_injector_rule}", array(), array('fetch' => PDO::FETCH_ASSOC))->fetchAllAssoc('crid');
-      foreach ($results as $id => $rule) {
-        $rules[$id] = $rule;
-      }
-      cache_set('css_injector:rules', $rules);
-    }
-  }
+  // Get the configured rule definitions. As the config is defined as
+  // _config_static it is loaded once per request and therefore neither static
+  // variable nor caching are needed.
+  $rules = config_get('css_injector.rules_definition', 'rules') ?? array();
 
   if (is_numeric($crid)) {
     return $rules[$crid];
@@ -232,9 +227,8 @@ function _css_injector_load_rule($crid = NULL, $reset = FALSE) {
 function _css_injector_delete_rule($crid) {
   if ($rule = _css_injector_load_rule($crid)) {
     file_unmanaged_delete(_css_injector_rule_uri($crid));
-    db_delete('css_injector_rule')
-      ->condition('crid', $crid)
-      ->execute();
+    config_clear('css_injector.rules_definition', 'rules.' . $crid);
+    config_clear('css_injector.rules_css', 'rules.' . $crid);
     backdrop_set_message(t('The CSS rule %title has been deleted.', array('%title' => $rule['title'])));
   }
 }
@@ -242,11 +236,10 @@ function _css_injector_delete_rule($crid) {
 /**
  * Helper function to determine whether a rule's conditions are met.
  *
- * @param $css_rule
+ * @param array $css_rule
  *   Array describing the rule.
  */
-
-function _css_injector_evaluate_rule($css_rule = array()) {
+function _css_injector_evaluate_rule(array $css_rule = array()) {
   // Match path if necessary.
   if (!empty($css_rule['rule_conditions'])) {
     if ($css_rule['rule_type'] < CSS_INJECTOR_PHP) {
@@ -280,7 +273,7 @@ function _css_injector_evaluate_rule($css_rule = array()) {
 
 /**
  * Return the URI for a crid.
- * @param $crid
+ * @param int $crid
  *   The integer identifying the CSS Rule ID (crid)
  */
 function _css_injector_rule_uri($crid) {
@@ -297,7 +290,7 @@ function _css_injector_get_themes() {
   $themes = array();
   $theme_list = list_themes();
   foreach ($theme_list as $single_theme) {
-    //
+    // Check the theme is enabled and the theme file exists.
     if ($single_theme->status && file_exists($single_theme->filename)) {
       $themes[$single_theme->name] = $single_theme->info['name'];
     }
@@ -320,13 +313,56 @@ function _css_injector_update_breadcrumb() {
   backdrop_set_breadcrumb($breadcrumb);
 }
 
-/*
- *  Implements hook_config_info()
+/**
+ * Implements hook_config_info().
  */
 function css_injector_config_info() {
-  $prefixes['css_injector.settings'] = array(
-    'label' => t('CSS injector settings'),
-    'group' => t('Configuration'),
+  $config_info = array(
+    'css_injector.settings' => array(
+      'label' => t('CSS Injector Settings'),
+      'group' => t('Configuration'),
+    ),
+    'css_injector.rules_definition' => array(
+      'label' => t('CSS Injector Rule Definitions'),
+      'group' => t('Configuration'),
+    ),
+    'css_injector.rules_css' => array(
+      'label' => t('CSS Injector Rule CSS'),
+      'group' => t('Configuration'),
+    ),
   );
-  return $prefixes;
+  return $config_info;
+}
+
+/**
+ * Implements hook_config_update().
+ */
+function css_injector_config_update(Config $staging_config, Config $active_config) {
+  // Check to see if the config is the css_text config.
+  $config_name = $staging_config->getName();
+  if ($config_name === 'css_injector.rules_css') {
+    $staging_rules_css = $staging_config->get('rules');
+    $active_rules_css = $active_config->get('rules');
+    foreach ($staging_rules_css as $rule_id => $rule) {
+      // First check if the rule css exists in active.
+      $check_rule_exists = isset($active_rules_css[$rule_id]['css_text']);
+
+      // Check whether the CSS matches.
+      $check_css_match = ($active_rules_css[$rule_id]['css_text'] ?? '') == $rule['css_text'];
+
+      if (!$check_rule_exists || !$check_css_match) {
+        // If the CSS does not exist or does not match (re-)write the CSS file
+        // with the CSS from staging.
+        file_unmanaged_save_data($rule['css_text'], _css_injector_rule_uri($rule_id), FILE_EXISTS_REPLACE);
+      }
+    }
+    // Check to see if any of the rules in active are deleted by the staging
+    // config.
+    foreach ($active_rules_css as $rule_id => $rule) {
+      if (!isset($staging_rules_css[$rule_id])) {
+        // If the CSS is not in the staging rules CSS, remove the CSS file.
+        file_unmanaged_delete(_css_injector_rule_uri($rule_id));
+      }
+    }
+  }
 }
