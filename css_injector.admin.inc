@@ -314,6 +314,7 @@ function css_injector_edit_save($form, &$form_state) {
   if (is_null($crid)) {
     $all_rules = _css_injector_load_rule();
     $crid = !empty($all_rules) ? max(array_keys($all_rules)) + 1 : 1;
+    $form_state['values']['crid'] = $crid;
   }
   $rule = array(
     'crid' => $crid,
@@ -340,7 +341,7 @@ function css_injector_edit_save($form, &$form_state) {
  */
 function css_injector_edit_save_and_continue($form, &$form_state) {
   css_injector_edit_save($form, $form_state);
-  $form_state['redirect'] = 'admin/config/development/css-injector/edit/' . $form_state['values']['rule']['crid'];
+  $form_state['redirect'] = 'admin/config/development/css-injector/edit/' . $form_state['values']['crid'];
 }
 
 /**
