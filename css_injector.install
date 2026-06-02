@@ -166,14 +166,16 @@ function css_injector_update_1002() {
 }
 
 /**
- * Add Ace editor default height setting.
+ * Add Ace editor default height and default autocomplete live settings.
  */
 function css_injector_update_1003() {
-  // Add the default config setting for ace editor height.
   $config = config('css_injector.settings');
+  // Add the default config setting for ace editor height.
   $config->set('css_injector_ace_editor_height', '300px');
+  // Set the default for autocomplete live to be off.
+  $config->set('css_injector_ace_editor_autocomplete_live', 0);
   $config->save();
 
   $t = get_t();
-  return $t("The CSS code editor height has been set to the existing value of '300px'. You can modify it in the CSS Injector Settings form.");
+  return $t("The CSS code editor height has been set to the existing value of '300px'. You can modify it in the CSS Injector Settings form. Autocomplete has been added but the live function (list of potential autocomplete matches appears as you type) is disabled by default; either use 'Ctrl' + 'Space' to get a list of matches or enable live autocomplete in the Settings form.");
 }

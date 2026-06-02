@@ -3,13 +3,18 @@
   /**
    * Add syntax highlighter for textarea.
    */
-  Backdrop.behaviors.slideUpDown = {
+  Backdrop.behaviors.cssInjectorAceEditor = {
     attach: function(context, settings) {
       $('body').addClass('has-js');
       var editor = ace.edit("editor");
       editor.getSession().setUseWorker(false);
       editor.setTheme("ace/theme/chrome");
       editor.getSession().setMode("ace/mode/css");
+      editor.setOptions({
+        enableBasicAutocompletion: true,
+        enableSnippets: true,
+        enableLiveAutocompletion: settings.cssInjector.enableLiveAutocompletion
+      });
       editor.commands.addCommand({
         name: "Toggle Fullscreen",
         bindKey: "F12",

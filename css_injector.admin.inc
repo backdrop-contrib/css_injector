@@ -5,6 +5,11 @@
  */
 
 /**
+ * Define Ace syntax highlighter version.
+ */
+define('CSS_INJECTOR_ACE_VERSION', '1.43.3');
+
+/**
  * Form builder function for CSS Injector's main admin (rule overview) page.
  */
 function css_injector_admin_form($form, &$form_state) {
@@ -132,19 +137,41 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   if ($config_settings->get('css_injector_use_ace') && !module_exists('ace_editor')) {
     // Adding ace syntax highlighter.
     $form['#attached']['js'] = array(
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ace.js' => array(
+      // Core Ace library.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/ace.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/theme-chrome.js' => array(
+      // Theme for editor.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/theme-chrome.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/mode-css.js' => array(
+      // CSS Mode Definition.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/mode-css.js' => array(
         'preprocess' => FALSE,
       ),
+      // Language tools to support autocomplete.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/ext-language_tools.min.js' => array(
+        'preprocess' => FALSE,
+      ),
+      // CSS Snippets to enable shortcuts to completing common statements.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/snippets/css.min.js' => array(
+        'preprocess' => FALSE,
+      ),
+      // Add settings.
+      array(
+        'data' => array(
+          'cssInjector' => array(
+            'enableLiveAutocompletion' => (bool) $config_settings->get('css_injector_ace_editor_autocomplete_live'),
+          ),
+        ),
+        'type' => 'setting',
+      ),
+      // Add and configure the editor.
       $module_path . '/js/syntax_highlighter.js' => array(
         'preprocess' => FALSE,
       ),
     );
+
     $ace_editor_height = $config_settings->get('css_injector_ace_editor_height');
     $form['#attached']['css'] = array(
       $module_path . '/css/syntax_highlighter.css',
