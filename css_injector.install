@@ -164,3 +164,16 @@ function css_injector_update_1002() {
     $config->save();
   }
 }
+
+/**
+ * Add Ace editor default height setting.
+ */
+function css_injector_update_1003() {
+  // Add the default config setting for ace editor height.
+  $config = config('css_injector.settings');
+  $config->set('css_injector_ace_editor_height', '300px');
+  $config->save();
+
+  $t = get_t();
+  return $t("The CSS code editor height has been set to the existing value of '300px'. You can modify it in the CSS Injector Settings form.");
+}

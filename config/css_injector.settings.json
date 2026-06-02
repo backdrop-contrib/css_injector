@@ -1,5 +1,6 @@
 {
     "_config_name": "css_injector.settings",
     "_config_static": true,
-    "css_injector_use_ace": 1
+    "css_injector_use_ace": 1,
+    "css_injector_ace_editor_height": "300px"
 }

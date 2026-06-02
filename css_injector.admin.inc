@@ -107,6 +107,7 @@ function theme_css_injector_admin_form($variables) {
 function css_injector_edit($form, $form_state, $crid = NULL) {
   _css_injector_update_breadcrumb();
   $module_path = backdrop_get_path('module', 'css_injector');
+  $config_settings = config('css_injector.settings');
 
   if (isset($crid) && is_numeric($crid)) {
     $rule = _css_injector_load_rule($crid, TRUE);
@@ -128,7 +129,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     );
   }
 
-  if (config_get('css_injector.settings', 'css_injector_use_ace') && !module_exists('ace_editor')) {
+  if ($config_settings->get('css_injector_use_ace') && !module_exists('ace_editor')) {
     // Adding ace syntax highlighter.
     $form['#attached']['js'] = array(
       'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ace.js' => array(
@@ -144,9 +145,13 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
         'preprocess' => FALSE,
       ),
     );
-
+    $ace_editor_height = $config_settings->get('css_injector_ace_editor_height');
     $form['#attached']['css'] = array(
       $module_path . '/css/syntax_highlighter.css',
+      array(
+        'data' => '.css-injector-edit{--ace-editor-height:' . $ace_editor_height . ';}',
+        'type' => 'inline',
+      ),
     );
   }
 
@@ -172,9 +177,15 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#required' => TRUE,
   );
 
+  $ace_editor_markup = '<div class="ace-editor">';
+  $ace_editor_markup .= '<div id="editor">' . $rule['css_text'] . '</div></div>';
+  $ace_editor_markup .= '<div class="ace-editor-fullscreen help">';
+  $ace_editor_markup .= t('Press F12 whilst focus is in the CSS code editor to switch to full screen mode. Press F11 or Esc to exit.');
+  $ace_editor_markup .= '</div>';
+
   $form['css_text_ace'] = array(
     '#prefix' => '<span class="disable-ace">Disable syntax highlighter</span>',
-    '#markup' => '<div class="ace-editor"><div id="editor">' . $rule['css_text'] . '</div></div>',
+    '#markup' => $ace_editor_markup,
   );
 
   // Get info of site themes.
@@ -182,7 +193,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   $default_theme = config_get('system.core', 'theme_default');
 
   // Check the rule themes, using the default theme if not set.
-  $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
+  $rule_themes = $config_settings->get('css_injector_default_theme');
   $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
   if (isset($rule['rule_themes']) && !empty($rule['rule_themes'])) {

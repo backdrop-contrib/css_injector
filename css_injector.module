@@ -133,7 +133,8 @@ function css_injector_admin() {
 
   $themes = _css_injector_get_themes();
   $default_theme = config_get('system.core', 'theme_default');
-  $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
+  $config = config('css_injector.settings');
+  $rule_themes = $config->get('css_injector_default_theme');
   $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
   $form['css_injector_default_theme'] = array(
@@ -149,7 +150,7 @@ function css_injector_admin() {
     $form['css_injector_use_ace'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use Ace syntax highlighter'),
-      '#default_value' => config_get('css_injector.settings', 'css_injector_use_ace'),
+      '#default_value' => $config->get('css_injector_use_ace'),
       '#description' => t('Check if you want to enhance your editing experience with Ace syntax highlighter. If checked, Ace will be loaded via CDN.'),
     );
   } else {
@@ -159,8 +160,46 @@ function css_injector_admin() {
     );
   }
 
+  $form['css_injector_ace_editor_height'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Ace editor height',
+    '#default_value' => $config->get('css_injector_ace_editor_height'),
+    '#maxlength' => 7,
+    '#size' => 10,
+    '#description' => t("Set the height using a valid length. The following units are allowed: 'px', 'vh', 'rem', 'em'. For example, you could use '80vh' to make the code editor fill 80% of the browser view height. The unit must be a whole number."),
+    '#element_validate' => array('css_injector_ace_editor_height_validate'),
+    '#states'  => array(
+      'enabled' => array(
+        ':input[name="css_injector_use_ace"]' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        ':input[name="css_injector_use_ace"]' => array('checked' => TRUE),
+      ),
+      'visible' => array(
+        ':input[name="css_injector_use_ace"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
   $form['#config'] = 'css_injector.settings';
   return system_settings_form($form);
+}
+
+/**
+ * Validation function for CSS Injector Ace editor height.
+ */
+function css_injector_ace_editor_height_validate($element, &$form_state, $form) {
+  if (empty($element['#value'])) {
+    form_error($element, t('This field is required.'));
+  }
+  else {
+    $value = $element['#value'];
+    $pattern = '^(\d+)(px|vh|rem|em)$^';
+    $check = preg_match($pattern, $value, $matches);
+    if ($check === 0) {
+      form_error($element, t("Enter a valid length value (e.g. '300px' or '80vh')."));
+    }
+  }
 }
 
 /**
