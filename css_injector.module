@@ -209,7 +209,7 @@ function css_injector_ace_editor_height_validate($element, &$form_state, $form) 
   }
   else {
     $value = $element['#value'];
-    $pattern = '^(\d+)(px|vh|rem|em)$^';
+    $pattern = '^(\d+)(px|vh|rem)$^';
     $check = preg_match($pattern, $value, $matches);
     if ($check === 0) {
       form_error($element, t("Enter a valid length value (e.g. '300px' or '80vh')."));
