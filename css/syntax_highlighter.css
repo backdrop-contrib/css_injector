@@ -1,17 +1,21 @@
-.ace-editor {
+.ace-editor,
+.ace-editor-fullscreen {
   display: none;
 }
 .has-js .ace-editor {
   display: block;
   position: relative;
   width: 100%;
-  height: 300px;
+  height: var(--ace-editor-height, 300px);
   margin-bottom: 15px;
   margin-top: -10px;
   border: 1px #bbb solid;
 }
 .has-js .form-item-css-text .form-textarea-wrapper{
   display: none;
+}
+.has-js .ace-editor-fullscreen {
+  display: block;
 }
 #editor {
   position: absolute;

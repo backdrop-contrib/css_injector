@@ -5,6 +5,11 @@
  */
 
 /**
+ * Define Ace syntax highlighter version.
+ */
+define('CSS_INJECTOR_ACE_VERSION', '1.43.3');
+
+/**
  * Form builder function for CSS Injector's main admin (rule overview) page.
  */
 function css_injector_admin_form($form, &$form_state) {
@@ -107,6 +112,7 @@ function theme_css_injector_admin_form($variables) {
 function css_injector_edit($form, $form_state, $crid = NULL) {
   _css_injector_update_breadcrumb();
   $module_path = backdrop_get_path('module', 'css_injector');
+  $config_settings = config('css_injector.settings');
 
   if (isset($crid) && is_numeric($crid)) {
     $rule = _css_injector_load_rule($crid, TRUE);
@@ -128,25 +134,51 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     );
   }
 
-  if (config_get('css_injector.settings', 'css_injector_use_ace') && !module_exists('ace_editor')) {
+  if ($config_settings->get('css_injector_use_ace') && !module_exists('ace_editor')) {
     // Adding ace syntax highlighter.
     $form['#attached']['js'] = array(
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ace.js' => array(
+      // Core Ace library.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/ace.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/theme-chrome.js' => array(
+      // Theme for editor.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/theme-chrome.js' => array(
         'preprocess' => FALSE,
       ),
-      'https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/mode-css.js' => array(
+      // CSS Mode Definition.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/mode-css.js' => array(
         'preprocess' => FALSE,
       ),
+      // Language tools to support autocomplete.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/ext-language_tools.min.js' => array(
+        'preprocess' => FALSE,
+      ),
+      // CSS Snippets to enable shortcuts to completing common statements.
+      'https://cdnjs.cloudflare.com/ajax/libs/ace/' . CSS_INJECTOR_ACE_VERSION . '/snippets/css.min.js' => array(
+        'preprocess' => FALSE,
+      ),
+      // Add settings.
+      array(
+        'data' => array(
+          'cssInjector' => array(
+            'enableLiveAutocompletion' => (bool) $config_settings->get('css_injector_ace_editor_autocomplete_live'),
+          ),
+        ),
+        'type' => 'setting',
+      ),
+      // Add and configure the editor.
       $module_path . '/js/syntax_highlighter.js' => array(
         'preprocess' => FALSE,
       ),
     );
 
+    $ace_editor_height = $config_settings->get('css_injector_ace_editor_height');
     $form['#attached']['css'] = array(
       $module_path . '/css/syntax_highlighter.css',
+      array(
+        'data' => '.css-injector-edit{--ace-editor-height:' . $ace_editor_height . ';}',
+        'type' => 'inline',
+      ),
     );
   }
 
@@ -172,9 +204,15 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
     '#required' => TRUE,
   );
 
+  $ace_editor_markup = '<div class="ace-editor">';
+  $ace_editor_markup .= '<div id="editor">' . $rule['css_text'] . '</div></div>';
+  $ace_editor_markup .= '<div class="ace-editor-fullscreen help">';
+  $ace_editor_markup .= t('Press F12 whilst focus is in the CSS code editor to switch to full screen mode. Press F11 or Esc to exit.');
+  $ace_editor_markup .= '</div>';
+
   $form['css_text_ace'] = array(
     '#prefix' => '<span class="disable-ace">Disable syntax highlighter</span>',
-    '#markup' => '<div class="ace-editor"><div id="editor">' . $rule['css_text'] . '</div></div>',
+    '#markup' => $ace_editor_markup,
   );
 
   // Get info of site themes.
@@ -182,7 +220,7 @@ function css_injector_edit($form, $form_state, $crid = NULL) {
   $default_theme = config_get('system.core', 'theme_default');
 
   // Check the rule themes, using the default theme if not set.
-  $rule_themes = config_get('css_injector.settings', 'css_injector_default_theme');
+  $rule_themes = $config_settings->get('css_injector_default_theme');
   $rule_themes = isset($rule_themes) ? $rule_themes : $default_theme;
 
   if (isset($rule['rule_themes']) && !empty($rule['rule_themes'])) {
