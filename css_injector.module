@@ -94,7 +94,7 @@ function css_injector_menu() {
       'description' => 'Settings page for CSS Injector module.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('css_injector_admin'),
-      'access arguments' => array('administer css injection settings'),
+      'access arguments' => array('administer css injection'),
       'type' => MENU_LOCAL_TASK,
     ),
     'admin/config/development/css-injector/add' => array(
