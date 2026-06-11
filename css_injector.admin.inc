@@ -48,6 +48,14 @@ function css_injector_admin_form($form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Save configuration'),
   );
+  if (!empty($rules)) {
+    $form['actions']['rewrite_files'] = array(
+      '#type' => 'button',
+      '#value' => t('Rewrite CSS files'),
+      '#executes_submit_callback' => TRUE,
+      '#submit' => array('css_injector_rewrite_css_files'),
+    );
+  }
   return $form;
 }
 
@@ -69,6 +77,40 @@ function css_injector_admin_form_submit($form, &$form_state) {
   // Save the config and provide a message.
   $config->save();
   backdrop_set_message(t('Configuration saved.'));
+}
+
+/**
+ * Rewrite CSS Files from Config.
+ */
+function css_injector_rewrite_css_files() {
+  // Get the rules_css config.
+  $config = config('css_injector.rules_css');
+  $rules_css = $config->get('rules');
+
+  // Check that one or more rules are defined.
+  if (!empty($rules_css)) {
+    // If rules exist, rewrite the file, over-writing if it exists.
+    $file_count = 0;
+    foreach ($rules_css as $rule_id => $rule) {
+      // Check that CSS text is present.
+      if (!empty($rule['css_text'])) {
+        $result = file_unmanaged_save_data($rule['css_text'], _css_injector_rule_uri($rule_id), FILE_EXISTS_REPLACE);
+        $file_count = $result ? ++$file_count : $file_count;
+      }
+    }
+    if ($file_count > 0) {
+      backdrop_set_message(t('!file_count files have been written or re-written.', array(
+        '!file_count' => $file_count,
+      )));
+    }
+    else {
+      backdrop_set_message(t('No files have been written or re-written.'), 'warning');
+    }
+
+  }
+  else {
+    backdrop_set_message(t('No rules found.'), 'warning');
+  }
 }
 
 /**
