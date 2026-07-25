@@ -15,6 +15,10 @@
         enableSnippets: true,
         enableLiveAutocompletion: settings.cssInjector.enableLiveAutocompletion
       });
+      editor.session.setOptions({
+        tabSize: 2,
+        useSoftTabs: true,
+      })
       editor.commands.addCommand({
         name: "Toggle Fullscreen",
         bindKey: "F12",
